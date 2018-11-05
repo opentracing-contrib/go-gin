@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
+	"github.com/opentracing-contrib/go-gin/ginhttp"
 	opentracing "github.com/opentracing/opentracing-go"
-	"github.com/stuart-mclaren/go-gin/ginhttp"
 	jaeger "github.com/uber/jaeger-client-go"
 	"github.com/uber/jaeger-client-go/zipkin"
 )

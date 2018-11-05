@@ -1,6 +1,6 @@
 # go-gin
 
-OpenTracing middleware for Gin http framework (https://github.com/gin-gonic/gin).
+OpenTracing middleware for Gin http framework (https://github.com/gin-gonic/gin)
 
 See tests for example usage.
 

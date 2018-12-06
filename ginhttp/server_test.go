@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/mocktracer"
 )
 
@@ -96,7 +96,7 @@ func TestSpanObserverOption(t *testing.T) {
 				t.Fatalf("got %s operation name, expected %s", got, want)
 			}
 
-			defaultLength := 5
+			defaultLength := 6
 			if len(spans[0].Tags()) != len(testCase.Tags)+defaultLength {
 				t.Fatalf("got tag length %d, expected %d", len(spans[0].Tags()), len(testCase.Tags))
 			}

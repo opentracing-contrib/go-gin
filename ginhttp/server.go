@@ -12,7 +12,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	opentracing "github.com/opentracing/opentracing-go"
+	"github.com/opentracing/opentracing-go"
 	"github.com/opentracing/opentracing-go/ext"
 )
 
@@ -21,6 +21,7 @@ const defaultComponentName = "net/http"
 type mwOptions struct {
 	opNameFunc    func(r *http.Request) string
 	spanObserver  func(span opentracing.Span, r *http.Request)
+	errorFunc     func(ctx *gin.Context) bool
 	componentName string
 }
 
@@ -48,6 +49,13 @@ func MWComponentName(componentName string) MWOption {
 func MWSpanObserver(f func(span opentracing.Span, r *http.Request)) MWOption {
 	return func(options *mwOptions) {
 		options.spanObserver = f
+	}
+}
+
+// MWErrorFunc returns a MWOption that sets the span error tag
+func MWErrorFunc(f func(ctx *gin.Context) bool) MWOption {
+	return func(options *mwOptions) {
+		options.errorFunc = f
 	}
 }
 
@@ -84,6 +92,9 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 
 		c.Next()
 
+		if opts.errorFunc != nil {
+			ext.Error.Set(sp, opts.errorFunc(c))
+		}
 		ext.HTTPStatusCode.Set(sp, uint16(c.Writer.Status()))
 		sp.Finish()
 	}

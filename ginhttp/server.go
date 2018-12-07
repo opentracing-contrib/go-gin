@@ -67,9 +67,6 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 			return "HTTP " + r.Method
 		},
 		spanObserver: func(span opentracing.Span, r *http.Request) {},
-		errorFunc: func(ctx *gin.Context) bool {
-			return false
-		},
 	}
 	for _, opt := range options {
 		opt(&opts)
@@ -95,7 +92,9 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 
 		c.Next()
 
-		ext.Error.Set(sp, opts.errorFunc(c))
+		if opts.errorFunc != nil {
+			ext.Error.Set(sp, opts.errorFunc(c))
+		}
 		ext.HTTPStatusCode.Set(sp, uint16(c.Writer.Status()))
 		sp.Finish()
 	}

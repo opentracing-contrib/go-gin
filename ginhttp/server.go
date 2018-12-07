@@ -21,7 +21,7 @@ const defaultComponentName = "net/http"
 type mwOptions struct {
 	opNameFunc    func(r *http.Request) string
 	spanObserver  func(span opentracing.Span, r *http.Request)
-	errorFunc     func(r *http.Response) bool
+	errorFunc     func(ctx *gin.Context) bool
 	componentName string
 }
 
@@ -53,7 +53,7 @@ func MWSpanObserver(f func(span opentracing.Span, r *http.Request)) MWOption {
 }
 
 // MWErrorFunc returns a MWOption that sets the span error tag
-func MWErrorFunc(f func(r *http.Response) bool) MWOption {
+func MWErrorFunc(f func(ctx *gin.Context) bool) MWOption {
 	return func(options *mwOptions) {
 		options.errorFunc = f
 	}
@@ -67,7 +67,7 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 			return "HTTP " + r.Method
 		},
 		spanObserver: func(span opentracing.Span, r *http.Request) {},
-		errorFunc: func(r *http.Response) bool {
+		errorFunc: func(ctx *gin.Context) bool {
 			return false
 		},
 	}
@@ -95,7 +95,7 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 
 		c.Next()
 
-		ext.Error.Set(sp, opts.errorFunc(c.Request.Response))
+		ext.Error.Set(sp, opts.errorFunc(c))
 		ext.HTTPStatusCode.Set(sp, uint16(c.Writer.Status()))
 		sp.Finish()
 	}

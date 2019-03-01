@@ -4,15 +4,16 @@ go:
   - 1.7.x
   - 1.8.x
   - 1.9.x
+  - 1.10.x
+  - 1.11.x
   - tip
 
 install:
-  - go get golang.org/x/tools/cmd/goimports
   - go get github.com/gin-gonic/gin
   - go get github.com/opentracing/opentracing-go
   - go get github.com/uber/jaeger-client-go
   - go get github.com/uber/jaeger-client-go/zipkin
 
 script:
-  - test -z $(goimports -l .)
+  - test -z $(gofmt -l .)
   - go test -v -cover -race ./...

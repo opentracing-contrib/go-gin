@@ -3,6 +3,7 @@ package ginhttp
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -104,6 +105,50 @@ func TestSpanObserverOption(t *testing.T) {
 				if tag := spans[0].Tag(k); v != tag.(string) {
 					t.Fatalf("got %v tag, expected %v", tag, v)
 				}
+			}
+		})
+	}
+}
+
+func TestURLTagOption(t *testing.T) {
+
+	fn := func(u *url.URL) string {
+		// Log path only (no query parameters etc)
+		return u.Path
+	}
+
+	tests := []struct {
+		options []MWOption
+		url     string
+		tag     string
+	}{
+		{[]MWOption{}, "/root?token=123", "/root?token=123"},
+		{[]MWOption{MWURLTagFunc(fn)}, "/root?token=123", "/root"},
+	}
+
+	for _, tt := range tests {
+		testCase := tt
+		t.Run(testCase.tag, func(t *testing.T) {
+			tr := &mocktracer.MockTracer{}
+			mw := Middleware(tr, testCase.options...)
+			r := gin.New()
+			r.Use(mw)
+			srv := httptest.NewServer(r)
+			defer srv.Close()
+
+			_, err := http.Get(srv.URL + testCase.url)
+			if err != nil {
+				t.Fatalf("server returned error: %v", err)
+			}
+
+			spans := tr.FinishedSpans()
+			if got, want := len(spans), 1; got != want {
+				t.Fatalf("got %d spans, expected %d", got, want)
+			}
+
+			tag := spans[0].Tags()["http.url"]
+			if got, want := tag, testCase.tag; got != want {
+				t.Fatalf("got %s tag name, expected %s", got, want)
 			}
 		})
 	}

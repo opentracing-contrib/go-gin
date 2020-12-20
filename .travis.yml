@@ -1,18 +1,12 @@
 language: go
 
 go:
-  - 1.7.x
-  - 1.8.x
-  - 1.9.x
-  - 1.10.x
   - 1.11.x
+  - 1.12.x
+  - 1.13.x
+  - 1.14.x
+  - 1.15.x
   - tip
-
-install:
-  - go get github.com/gin-gonic/gin
-  - go get github.com/opentracing/opentracing-go
-  - go get github.com/uber/jaeger-client-go
-  - go get github.com/uber/jaeger-client-go/zipkin
 
 script:
   - test -z $(gofmt -l .)

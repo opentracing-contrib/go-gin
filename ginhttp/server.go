@@ -96,9 +96,11 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 		c.Request = c.Request.WithContext(
 			opentracing.ContextWithSpan(c.Request.Context(), sp))
 
-		c.Next()
+		defer func() {
+			ext.HTTPStatusCode.Set(sp, uint16(c.Writer.Status()))
+			sp.Finish()
+		}()
 
-		ext.HTTPStatusCode.Set(sp, uint16(c.Writer.Status()))
-		sp.Finish()
+		c.Next()
 	}
 }

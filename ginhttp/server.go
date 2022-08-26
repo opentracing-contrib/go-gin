@@ -1,3 +1,4 @@
+//go:build go1.7
 // +build go1.7
 
 // This is the middleware from github.com/opentracing-contrib/go-stdlib
@@ -20,7 +21,7 @@ import (
 const defaultComponentName = "net/http"
 
 type mwOptions struct {
-	opNameFunc    func(r *http.Request) string
+	opNameFunc    func(c *gin.Context) string
 	spanObserver  func(span opentracing.Span, r *http.Request)
 	urlTagFunc    func(u *url.URL) string
 	componentName string
@@ -31,7 +32,7 @@ type MWOption func(*mwOptions)
 
 // OperationNameFunc returns a MWOption that uses given function f
 // to generate operation name for each server-side span.
-func OperationNameFunc(f func(r *http.Request) string) MWOption {
+func OperationNameFunc(f func(c *gin.Context) string) MWOption {
 	return func(options *mwOptions) {
 		options.opNameFunc = f
 	}
@@ -66,8 +67,8 @@ func MWURLTagFunc(f func(u *url.URL) string) MWOption {
 //   https://github.com/opentracing-contrib/go-stdlib/
 func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 	opts := mwOptions{
-		opNameFunc: func(r *http.Request) string {
-			return "HTTP " + r.Method
+		opNameFunc: func(c *gin.Context) string {
+			return "HTTP " + c.FullPath()
 		},
 		spanObserver: func(span opentracing.Span, r *http.Request) {},
 		urlTagFunc: func(u *url.URL) string {
@@ -81,7 +82,7 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		carrier := opentracing.HTTPHeadersCarrier(c.Request.Header)
 		ctx, _ := tr.Extract(opentracing.HTTPHeaders, carrier)
-		op := opts.opNameFunc(c.Request)
+		op := opts.opNameFunc(c)
 		sp := tr.StartSpan(op, ext.RPCServerOption(ctx))
 		ext.HTTPMethod.Set(sp, c.Request.Method)
 		ext.HTTPUrl.Set(sp, opts.urlTagFunc(c.Request.URL))

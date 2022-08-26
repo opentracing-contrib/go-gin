@@ -32,12 +32,21 @@ func TestExample(t *testing.T) {
 	r.Use(ginhttp.Middleware(tracer))
 	group := r.Group("")
 	group.GET("", fn)
+	group.GET("/:id", fn)
+
 	w := httptest.NewRecorder()
 	req, err := http.NewRequest("GET", "/", nil)
 	if err != nil {
 		t.Errorf("Error non-nil %v", err)
 	}
+
+	req2, err := http.NewRequest("GET", "/7s34xgwe", nil)
+	if err != nil {
+		t.Errorf("Error non-nil %v", err)
+	}
+
 	r.ServeHTTP(w, req)
+	r.ServeHTTP(w, req2)
 }
 
 func TestExampleWithValues(t *testing.T) {

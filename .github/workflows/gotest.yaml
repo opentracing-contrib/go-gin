@@ -1,0 +1,19 @@
+name: gotest
+
+on: [pull_request]
+
+jobs:
+  gotest:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        goVer: [1.11, 1.12, 1.13, 1.14, 1.15, 1.16, 1.17, 1.18, 1.19]
+    steps:
+      - name: Set up Go ${{ matrix.goVer }}
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.goVer }}
+      - name: Check out source
+        uses: actions/checkout@v1
+      - name: Test
+        run: go test -v -cover -race ./...

@@ -153,3 +153,50 @@ func TestURLTagOption(t *testing.T) {
 		})
 	}
 }
+
+func TestPanic(t *testing.T) {
+
+	tests := []struct {
+		handler         gin.HandlerFunc
+		spanFinishCount int
+		tag             string
+	}{
+		{
+			func(c *gin.Context) {
+				c.String(http.StatusOK, "OK")
+			},
+			1,
+			"OK",
+		},
+		{
+			func(c *gin.Context) {
+				panic("panic test")
+			},
+			1,
+			"Panic",
+		},
+	}
+
+	for _, tt := range tests {
+		testCase := tt
+		t.Run(testCase.tag, func(t *testing.T) {
+			tr := &mocktracer.MockTracer{}
+			mw := Middleware(tr)
+			r := gin.New()
+			r.Use(gin.Recovery(), mw)
+			r.GET("/hello", testCase.handler)
+			srv := httptest.NewServer(r)
+			defer srv.Close()
+
+			_, err := http.Get(srv.URL + "/hello")
+			if err != nil {
+				t.Fatalf("server returned error: %v", err)
+			}
+
+			spans := tr.FinishedSpans()
+			if got, want := len(spans), testCase.spanFinishCount; got != want {
+				t.Fatalf("got %d spans, expected %d", got, want)
+			}
+		})
+	}
+}

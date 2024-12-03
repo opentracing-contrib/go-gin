@@ -1,3 +1,4 @@
+//go:build go1.7
 // +build go1.7
 
 // This is the middleware from github.com/opentracing-contrib/go-stdlib
@@ -63,7 +64,8 @@ func MWURLTagFunc(f func(u *url.URL) string) MWOption {
 }
 
 // Middleware is a gin native version of the equivalent middleware in:
-//   https://github.com/opentracing-contrib/go-stdlib/
+//
+//	https://github.com/opentracing-contrib/go-stdlib/
 func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 	opts := mwOptions{
 		opNameFunc: func(r *http.Request) string {
@@ -98,7 +100,7 @@ func Middleware(tr opentracing.Tracer, options ...MWOption) gin.HandlerFunc {
 
 		c.Next()
 
-		ext.HTTPStatusCode.Set(sp, uint16(c.Writer.Status()))
+		ext.HTTPStatusCode.Set(sp, uint16(c.Writer.Status())) //nolint:gosec // can't have integer overflow with status code
 		sp.Finish()
 	}
 }

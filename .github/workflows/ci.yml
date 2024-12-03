@@ -14,9 +14,9 @@ jobs:
   gotest:
     runs-on: ubuntu-24.04
     strategy:
+      fail-fast: false
       matrix:
         go-version: [
-          "1.17",
           "1.18",
           "1.19",
           "1.20",

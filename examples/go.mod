@@ -2,11 +2,11 @@ module github.com/opentracing-contrib/go-gin/examples
 
 go 1.23.3
 
-replace github.com/opentracing-contrib/go-gin => ../
+replace github.com/opentracing-contrib/go-gin/v2 => ../
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/opentracing-contrib/go-gin v0.0.0
+	github.com/opentracing-contrib/go-gin/v2 v2.0.0
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 )

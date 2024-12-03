@@ -6,7 +6,7 @@ replace github.com/opentracing-contrib/go-gin/v2 => ../
 
 require (
 	github.com/gin-gonic/gin v1.10.0
-	github.com/opentracing-contrib/go-gin/v2 v2.0.0
+	github.com/opentracing-contrib/go-gin/v2 v2.0.1
 	github.com/opentracing/opentracing-go v1.2.0
 	github.com/uber/jaeger-client-go v2.30.0+incompatible
 )

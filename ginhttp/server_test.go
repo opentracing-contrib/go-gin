@@ -1,6 +1,7 @@
 package ginhttp
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,22 +13,23 @@ import (
 )
 
 func TestOperationNameOption(t *testing.T) {
-
+	t.Parallel()
 	fn := func(r *http.Request) string {
 		return "HTTP " + r.Method + ": /root"
 	}
 
 	tests := []struct {
-		options []MWOption
 		opName  string
+		options []MWOption
 	}{
-		{nil, "HTTP GET"},
-		{[]MWOption{OperationNameFunc(fn)}, "HTTP GET: /root"},
+		{"HTTP GET", nil},
+		{"HTTP GET: /root", []MWOption{OperationNameFunc(fn)}},
 	}
 
 	for _, tt := range tests {
 		testCase := tt
 		t.Run(testCase.opName, func(t *testing.T) {
+			t.Parallel()
 			tr := &mocktracer.MockTracer{}
 			mw := Middleware(tr, testCase.options...)
 			r := gin.New()
@@ -35,10 +37,16 @@ func TestOperationNameOption(t *testing.T) {
 			srv := httptest.NewServer(r)
 			defer srv.Close()
 
-			_, err := http.Get(srv.URL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+
+			resp, err := srv.Client().Do(req)
 			if err != nil {
 				t.Fatalf("server returned error: %v", err)
 			}
+			defer resp.Body.Close()
 
 			spans := tr.FinishedSpans()
 			if got, want := len(spans), 1; got != want {
@@ -53,7 +61,7 @@ func TestOperationNameOption(t *testing.T) {
 }
 
 func TestSpanObserverOption(t *testing.T) {
-
+	t.Parallel()
 	opNamefn := func(r *http.Request) string {
 		return "HTTP " + r.Method + ": /root"
 	}
@@ -63,19 +71,20 @@ func TestSpanObserverOption(t *testing.T) {
 	wantTags := map[string]interface{}{"http.uri": "/"}
 
 	tests := []struct {
-		options []MWOption
-		opName  string
 		Tags    map[string]interface{}
+		opName  string
+		options []MWOption
 	}{
 		{nil, "HTTP GET", nil},
-		{[]MWOption{OperationNameFunc(opNamefn)}, "HTTP GET: /root", nil},
-		{[]MWOption{MWSpanObserver(spanObserverfn)}, "HTTP GET", wantTags},
-		{[]MWOption{OperationNameFunc(opNamefn), MWSpanObserver(spanObserverfn)}, "HTTP GET: /root", wantTags},
+		{nil, "HTTP GET: /root", []MWOption{OperationNameFunc(opNamefn)}},
+		{wantTags, "HTTP GET", []MWOption{MWSpanObserver(spanObserverfn)}},
+		{wantTags, "HTTP GET: /root", []MWOption{OperationNameFunc(opNamefn), MWSpanObserver(spanObserverfn)}},
 	}
 
 	for _, tt := range tests {
 		testCase := tt
 		t.Run(testCase.opName, func(t *testing.T) {
+			t.Parallel()
 			tr := &mocktracer.MockTracer{}
 			mw := Middleware(tr, testCase.options...)
 			r := gin.New()
@@ -83,10 +92,16 @@ func TestSpanObserverOption(t *testing.T) {
 			srv := httptest.NewServer(r)
 			defer srv.Close()
 
-			_, err := http.Get(srv.URL)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+
+			resp, err := srv.Client().Do(req)
 			if err != nil {
 				t.Fatalf("server returned error: %v", err)
 			}
+			defer resp.Body.Close()
 
 			spans := tr.FinishedSpans()
 			if got, want := len(spans), 1; got != want {
@@ -102,7 +117,7 @@ func TestSpanObserverOption(t *testing.T) {
 				t.Fatalf("got tag length %d, expected %d", len(spans[0].Tags()), len(testCase.Tags))
 			}
 			for k, v := range testCase.Tags {
-				if tag := spans[0].Tag(k); v != tag.(string) {
+				if tag, ok := spans[0].Tag(k).(string); !ok || v != tag {
 					t.Fatalf("got %v tag, expected %v", tag, v)
 				}
 			}
@@ -111,24 +126,25 @@ func TestSpanObserverOption(t *testing.T) {
 }
 
 func TestURLTagOption(t *testing.T) {
-
+	t.Parallel()
 	fn := func(u *url.URL) string {
 		// Log path only (no query parameters etc)
 		return u.Path
 	}
 
 	tests := []struct {
-		options []MWOption
 		url     string
 		tag     string
+		options []MWOption
 	}{
-		{[]MWOption{}, "/root?token=123", "/root?token=123"},
-		{[]MWOption{MWURLTagFunc(fn)}, "/root?token=123", "/root"},
+		{"/root?token=123", "/root?token=123", []MWOption{}},
+		{"/root?token=123", "/root", []MWOption{MWURLTagFunc(fn)}},
 	}
 
 	for _, tt := range tests {
 		testCase := tt
 		t.Run(testCase.tag, func(t *testing.T) {
+			t.Parallel()
 			tr := &mocktracer.MockTracer{}
 			mw := Middleware(tr, testCase.options...)
 			r := gin.New()
@@ -136,10 +152,16 @@ func TestURLTagOption(t *testing.T) {
 			srv := httptest.NewServer(r)
 			defer srv.Close()
 
-			_, err := http.Get(srv.URL + testCase.url)
+			req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, srv.URL+testCase.url, nil)
+			if err != nil {
+				t.Fatalf("failed to create request: %v", err)
+			}
+
+			resp, err := srv.Client().Do(req)
 			if err != nil {
 				t.Fatalf("server returned error: %v", err)
 			}
+			defer resp.Body.Close()
 
 			spans := tr.FinishedSpans()
 			if got, want := len(spans), 1; got != want {
